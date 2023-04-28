@@ -16,7 +16,7 @@ struct Vector3
 
 const char kWindowTitle[] = "LE2B_02_イソガイユウト_タイトル";
 
-Matrix4x4 Multiply(const Matrix4x4& m1, Matrix4x4& m2)
+Matrix4x4 Multiply(const Matrix4x4& m1, const Matrix4x4& m2)
 {
 	Matrix4x4 result;
 	result.m[0][0] = m1.m[0][0] * m2.m[0][0] + m1.m[0][1] * m2.m[1][0] + m1.m[0][2] * m2.m[2][0] + m1.m[0][3] * m2.m[3][0];
@@ -118,27 +118,26 @@ Matrix4x4 MakeAffineMatrix(const Vector3& scale, const Vector3& rotate, const Ve
 	Matrix4x4 rotateYMatrix = MakeRotateYMatrix(rotate.y);
 	Matrix4x4 rotateZMatrix = MakeRotateZMatrix(rotate.z);
 
-	Matrix4x4 YZResult = Multiply(rotateYMatrix, rotateZMatrix);
-	Matrix4x4 R = Multiply(rotateXMatrix, YZResult);
+	Matrix4x4 rotateMatrix = Multiply(rotateXMatrix, Multiply(rotateYMatrix,rotateZMatrix));
 
 	Matrix4x4 result;
 
-	result.m[0][0] = scale.x * R.m[0][0];
-	result.m[0][1] = scale.x * R.m[0][1];
-	result.m[0][2] = scale.x * R.m[0][2];
+	result.m[0][0] = scale.x * rotateMatrix.m[0][0];
+	result.m[0][1] = scale.x * rotateMatrix.m[0][1];
+	result.m[0][2] = scale.x * rotateMatrix.m[0][2];
 	result.m[0][3] = 0.0f;
-	result.m[1][0] = scale.y * R.m[1][0];
-	result.m[1][1] = scale.y * R.m[1][1];
-	result.m[1][2] = scale.y * R.m[1][2];
+	result.m[1][0] = scale.y * rotateMatrix.m[1][0];
+	result.m[1][1] = scale.y * rotateMatrix.m[1][1];
+	result.m[1][2] = scale.y * rotateMatrix.m[1][2];
 	result.m[1][3] = 0.0f;
-	result.m[2][0] = scale.z * R.m[2][0];
-	result.m[2][1] = scale.z * R.m[2][1];
-	result.m[2][2] = scale.z * R.m[2][2];
+	result.m[2][0] = scale.z * rotateMatrix.m[2][0];
+	result.m[2][1] = scale.z * rotateMatrix.m[2][1];
+	result.m[2][2] = scale.z * rotateMatrix.m[2][2];
 	result.m[2][3] = 0.0f;
-	result.m[2][0] = translate.x;
-	result.m[2][1] = translate.y;
-	result.m[2][2] = translate.z;
-	result.m[2][3] = 1.0f;
+	result.m[3][0] = translate.x;
+	result.m[3][1] = translate.y;
+	result.m[3][2] = translate.z;
+	result.m[3][3] = 1.0f;
 
 	return result;
 }
