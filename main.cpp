@@ -27,7 +27,7 @@ Matrix4x4 MakeTranslateMatrix(const Vector3& translate)
 	result.m[1][1] = 1.0f;
 	result.m[1][2] = 0.0f;
 	result.m[1][3] = 0.0f;
-	
+
 	result.m[2][0] = 0.0f;
 	result.m[2][1] = 0.0f;
 	result.m[2][2] = 1.0f;
@@ -107,8 +107,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	Novice::Initialize(kWindowTitle, 1280, 720);
 
 	// キー入力結果を受け取る箱
-	char keys[256] = {0};
-	char preKeys[256] = {0};
+	char keys[256] = { 0 };
+	char preKeys[256] = { 0 };
 
 	Vector3 translate{ 4.1f,2.6f,0.8f };
 	Vector3 scale{ 1.5f,5.2f,7.3f };
