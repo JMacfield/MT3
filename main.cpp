@@ -1,5 +1,8 @@
+#define _USE_MATH_DEFINES
+
 #include <Novice.h>
-#include <cmath>	
+#include <cmath>
+#include <math.h>
 #include <assert.h>
 
 struct Matrix4x4
@@ -12,6 +15,11 @@ struct Vector3
 	float x;
 	float y;
 	float z;
+};
+
+struct Sphere {
+	Vector3 center;
+	float radius;
 };
 
 const char kWindowTitle[] = "LE2B_02_イソガイユウト_タイトル";
@@ -291,6 +299,20 @@ Matrix4x4 MakeAffineMatrix(const Vector3& scale, const Vector3& rotate, const Ve
 	result.m[3][3] = 1.0f;
 
 	return result;
+}
+
+void DrawSphere(const Sphere& sphere, const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMatrix, uint32_t color) {
+	const uint32_t kSubDivision = 32;
+	const float kLonEvery = 90;
+	const float klatEvery = 90;
+	
+	for (uint32_t latIndex = 0; latIndex < kSubDivision; ++latIndex) {
+		float lat = -M_PI / 2.0 + klatEvery * latIndex;
+		for (uint32_t lonIndex = 0; lonIndex < kSubDivision; ++lonIndex) {
+			Vector3 a, b, c;
+			Novice::DrawLine()
+		}
+	}
 }
 
 // Windowsアプリでのエントリーポイント(main関数)
