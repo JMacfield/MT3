@@ -341,10 +341,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			translate.x += 0.1f;
 		}
 		if (keys[DIK_S]) {
-			translate.y -= 0.1f;
+			translate.z -= 0.1f;
 		}
 		if (keys[DIK_W]) {
-			translate.y += 0.1f;
+			translate.z += 0.1f;
 		}
 
 		Matrix4x4 worldMatrix = MakeAffineMatrix({ 1.0f,1.0f,1.0f }, rotate, translate);
@@ -359,7 +359,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			screenVerticles[i] = Transform(ndcMatrix, viewPortMatrix);
 		}
 
-		rotate.y++;
+		rotate.y += 0.06f;
 
 		///
 		/// ↑更新処理ここまで
