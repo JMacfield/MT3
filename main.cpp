@@ -306,33 +306,20 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	char keys[256] = {0};
 	char preKeys[256] = {0};
 
-	float rotateX = 0.0f, rotateY = 0.0f, rotateZ = 0.0f;
-	float translateX = 0.0f, translateY = 0.0f, translateZ = 0.0f;
-
-	Vector3 rotate{ rotateX,rotateY,rotateZ };
-	Vector3 translate{ translateX,translateY,translateZ };
-	Vector3 cameraPosition{ 480.0f,200.0f,0.0f };
-
 	Vector3 v1{ 1.2f,-3.9f,2.5f };
 	Vector3 v2{ 2.8f,0.4f,-1.3f };
 	Vector3 cross = Cross(v1, v2);
 
-	Matrix4x4 worldMatrix = MakeAffineMatrix({ 1.0f,1.0f,1.0f }, rotate, translate);
-	Matrix4x4 cameraMatrix = MakeAffineMatrix({ 1.0f,1.0f,1.0f }, { 0.0f,0.0f,0.0f, }, cameraPosition);
-	Matrix4x4 viewMatrix = Inverse(cameraMatrix);
-	Matrix4x4 projectionMatrix = MakePerspectiveFovMatrix(0.45f, float(kWindowWidth) / float(kWindowHeight), 0.1f, 100.0f);
-	Matrix4x4 worldViewProjectionMatrix = Multiply(worldMatrix, Multiply(viewMatrix, projectionMatrix));
-	Matrix4x4 viewPortMatrix = MakeViewPortMatrix(0, 0, float(kWindowed), float(kWindowHeight), 0.0f, 1.0f);
-	
+	Vector3 rotate{};
+	Vector3 translate{};
+	Vector3 cameraPosition{ 0.0f,0.0f,-10.0f };
+
 	Vector3 screenVerticles[3];
 	Vector3 kLocalVerticles[3];
 
-	
-
-	for (uint32_t i = 0; i < 3; ++i) {
-		Vector3 ndcMatrix = Transform(kLocalVerticles[i], worldViewProjectionMatrix);
-		screenVerticles[i] = Transform(ndcMatrix, viewPortMatrix);
-	}
+	kLocalVerticles[0] = { 0.0f,0.0f,0.0f };
+	kLocalVerticles[1] = { 1.0f,-1.0f,0.0f };
+	kLocalVerticles[2] = { -1.0f,-1.0f,0.0f };
 
 	// ウィンドウの×ボタンが押されるまでループ
 	while (Novice::ProcessMessage() == 0) {
@@ -347,7 +334,32 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		/// ↓更新処理ここから
 		///
 
-		
+		if (keys[DIK_A]) {
+			translate.x -= 0.1f;
+		}
+		if (keys[DIK_D]) {
+			translate.x += 0.1f;
+		}
+		if (keys[DIK_S]) {
+			translate.y -= 0.1f;
+		}
+		if (keys[DIK_W]) {
+			translate.y += 0.1f;
+		}
+
+		Matrix4x4 worldMatrix = MakeAffineMatrix({ 1.0f,1.0f,1.0f }, rotate, translate);
+		Matrix4x4 cameraMatrix = MakeAffineMatrix({ 1.0f,1.0f,1.0f }, { 0.0f,0.0f,0.0f, }, cameraPosition);
+		Matrix4x4 viewMatrix = Inverse(cameraMatrix);
+		Matrix4x4 projectionMatrix = MakePerspectiveFovMatrix(0.45f, float(kWindowWidth) / float(kWindowHeight), 0.1f, 100.0f);
+		Matrix4x4 worldViewProjectionMatrix = Multiply(worldMatrix, Multiply(viewMatrix, projectionMatrix));
+		Matrix4x4 viewPortMatrix = MakeViewPortMatrix(0, 0, float(kWindowWidth), float(kWindowHeight), 0.0f, 1.0f);
+
+		for (uint32_t i = 0; i < 3; ++i) {
+			Vector3 ndcMatrix = Transform(kLocalVerticles[i], worldViewProjectionMatrix);
+			screenVerticles[i] = Transform(ndcMatrix, viewPortMatrix);
+		}
+
+		rotate.y++;
 
 		///
 		/// ↑更新処理ここまで
