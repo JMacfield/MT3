@@ -23,6 +23,21 @@ struct Sphere {
 	float radius;
 };
 
+struct Line {
+	Vector3 origin;
+	Vector3 diff;
+};
+
+struct Ray {
+	Vector3 origin;
+	Vector3 diff;
+};
+
+struct Segment {
+	Vector3 origin;
+	Vector3 diff;
+};
+
 const char kWindowTitle[] = "LE2B_02_イソガイユウト_タイトル";
 
 Vector3 Add(const Vector3& v1, const Vector3& v2) {
@@ -323,7 +338,7 @@ void DrawGrid(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewPortMa
 	for (uint32_t xIndex = 0; xIndex <= kSubDivision; ++xIndex) {
 		worldVerticles[0] = { xIndex * kGridEvery - kGridHalfWidth,0.0f,kGridHalfWidth };
 		worldVerticles[1] = { xIndex * kGridEvery - kGridHalfWidth,0.0f, -kGridHalfWidth };
-	
+
 		for (uint32_t i = 0; i < 2; ++i) {
 			ndcVertex = Transform(worldVerticles[i], viewProjectionMatrix);
 			screenVerticles[i] = Transform(ndcVertex, viewPortMatrix);
@@ -349,7 +364,7 @@ void DrawGrid(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewPortMa
 	for (uint32_t zIndex = 0; zIndex <= kSubDivision; ++zIndex) {
 		worldVerticles[0] = { kGridHalfWidth,0.0f,zIndex * kGridEvery - kGridHalfWidth };
 		worldVerticles[1] = { -kGridHalfWidth,0.0f, zIndex * kGridEvery - kGridHalfWidth };
-		
+
 		for (uint32_t i = 0; i < 2; ++i) {
 			ndcVertex = Transform(worldVerticles[i], viewProjectionMatrix);
 			screenVerticles[i] = Transform(ndcVertex, viewPortMatrix);
@@ -373,16 +388,16 @@ void DrawGrid(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewPortMa
 }
 
 void DrawSphere(const Sphere& sphere, const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMatrix, unsigned int color) {
-	const uint32_t kSubDivision = 30; 
+	const uint32_t kSubDivision = 30;
 	const float kLonEvery = 2.0f * float(std::numbers::pi) / float(kSubDivision);
 	const float kLatEvery = float(std::numbers::pi) / float(kSubDivision);
-	
+
 	for (uint32_t latIndex = 0; latIndex < kSubDivision; ++latIndex) {
 		float lat = -1.0f * float(std::numbers::pi) / 2.0f + kLatEvery * latIndex;
-		
+
 		for (uint32_t lonIndex = 0; lonIndex < kSubDivision; ++lonIndex) {
 			float lon = lonIndex * kLonEvery;
-			
+
 			Vector3 a, b, c;
 			a = { sphere.radius * std::cosf(lat) * std::cosf(lon), sphere.radius * std::sinf(lat), sphere.radius * std::cosf(lat) * std::sinf(lon) };
 			a = Add(a, sphere.center);
@@ -414,7 +429,15 @@ void DrawSphere(const Sphere& sphere, const Matrix4x4& viewProjectionMatrix, con
 		}
 	}
 
-};
+}
+
+Vector3 Project(const Vector3& v1, const Vector3& v2) {
+
+}
+
+Vector3 ClosentPoint(const Vector3& point, const Segment& segment) {
+
+}
 
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
@@ -429,16 +452,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	char keys[256] = {0};
 	char preKeys[256] = {0};
 
-	Vector3 v1{ 1.2f,-3.9f,2.5f };
-	Vector3 v2{ 2.8f,0.4f,-1.3f };
-
 	Vector3 rotate{};
 	Vector3 translate{ 0.0f,1.0f,0.0f };
-	
+
 	Vector3 cameraPosition{ 0.0f,1.9f,-6.49f };
 	Vector3 cameraRotate{ 0.26f,0.0f,0.0f };
-	
-	Sphere sphere = { 0.0f,0.0f, 5.0f, 1.0f };
+
+	Segment segment{ {-2.0f,-1.0f,0.0f},{3.0f,2.0f,2.0f} };
+	Vector3 point{ -1.5f,-0.6f,0.6f };
 
 	// ウィンドウの×ボタンが押されるまでループ
 	while (Novice::ProcessMessage() == 0) {
@@ -461,10 +482,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		Matrix4x4 viewportMatrix = MakeViewPortMatrix(0, 0, float(kWindowWidth), float(kWindowHeight), 0.0f, 1.0f);
 
 		ImGui::Begin("window");
-		ImGui::DragFloat3("CameraTranslate", &translate.x, 0.01f);
-		ImGui::DragFloat3("CameraRotate", &cameraRotate.x, 0.01f);
-		ImGui::DragFloat3("SphereCenter", &sphere.center.x, 0.01f);
-		ImGui::DragFloat("SphereRadius", &sphere.radius, 0.01f);
+		ImGui::DragFloat3("Point", &point.x, 0.01f);
+		ImGui::DragFloat3("CameraRotate", &segment.origin.x, 0.01f);
+		ImGui::DragFloat3("SphereCenter", &segment.diff.x, 0.01f);
+		//ImGui::DragFloat("SphereRadius", &proj, 0.01f);
 		ImGui::End();
 
 		///
@@ -476,7 +497,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		///
 
 		DrawGrid(worldViewProjectionMatrix, viewportMatrix);
-		DrawSphere(sphere, worldViewProjectionMatrix, viewportMatrix, BLACK);
 
 		///
 		/// ↑描画処理ここまで
