@@ -557,6 +557,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		Novice::DrawLine((int)start.x, (int)start.y, (int)end.x, (int)end.y, WHITE);
 		DrawGrid(worldViewProjectionMatrix, viewPortMatrix);
 
+
 		///
 		/// ↑描画処理ここまで
 		///
