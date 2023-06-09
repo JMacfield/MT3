@@ -25,12 +25,24 @@ struct Sphere {
 
 const char kWindowTitle[] = "LE2B_02_イソガイユウト_タイトル";
 
+float Dot(const Vector3& v1, const Vector3& v2) {
+	return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
+}
+
+float Length(const Vector3& v) {
+	return sqrtf(Dot(v, v));
+}
+
 Vector3 Add(const Vector3& v1, const Vector3& v2) {
 	Vector3 result;
 	result.x = v1.x + v2.x;
 	result.y = v1.y + v2.y;
 	result.z = v1.z + v2.z;
 	return result;
+}
+
+Vector3 Subtract(const Vector3& v1, const Vector3& v2) {
+	return{ v1.x - v2.x,v1.y - v2.y,v1.z - v2.z };
 }
 
 Vector3 Cross(const Vector3& v1, const Vector3& v2) {
@@ -416,6 +428,18 @@ void DrawSphere(const Sphere& sphere, const Matrix4x4& viewProjectionMatrix, con
 
 };
 
+bool IsCollision(const Sphere& s1, const Sphere& s2) {
+	float result;
+	result = Dot(Subtract(s1.center, s2.center), Subtract(s1.center, s2.center));
+
+	if (result <= (s1.radius + s2.radius) * (s1.radius + s2.radius)) {
+		return true;
+	}
+	else {
+		return false;
+	}
+}
+
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
@@ -436,9 +460,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	Vector3 translate{ 0.0f,1.0f,0.0f };
 	
 	Vector3 cameraPosition{ 0.0f,1.9f,-6.49f };
-	Vector3 cameraRotate{ 0.26f,0.0f,0.0f };
+	Vector3 cameraRotate{ 0.08f,0.0f,0.0f };
 	
-	Sphere sphere = { 0.0f,0.0f, 5.0f, 1.0f };
+	Sphere sphere1 = { 2.0f,0.0f, 5.0f, 1.0f };
+	Sphere sphere2 = { -1.0f,0.0f,5.0f,1.0f };
+
+	int color = BLACK;
 
 	// ウィンドウの×ボタンが押されるまでループ
 	while (Novice::ProcessMessage() == 0) {
@@ -463,9 +490,17 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		ImGui::Begin("window");
 		ImGui::DragFloat3("CameraTranslate", &translate.x, 0.01f);
 		ImGui::DragFloat3("CameraRotate", &cameraRotate.x, 0.01f);
-		ImGui::DragFloat3("SphereCenter", &sphere.center.x, 0.01f);
-		ImGui::DragFloat("SphereRadius", &sphere.radius, 0.01f);
+		ImGui::DragFloat3("Sphere1Center", &sphere1.center.x, 0.01f);
+		ImGui::DragFloat3("Sphere2Center", &sphere2.center.x, 0.01f);
+		ImGui::DragFloat("SphereRadius", &sphere1.radius, 0.01f);
 		ImGui::End();
+
+		if (IsCollision(sphere1, sphere2)) {
+			color = RED;
+		}
+		else {
+			color = BLACK;
+		}
 
 		///
 		/// ↑更新処理ここまで
@@ -476,7 +511,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		///
 
 		DrawGrid(worldViewProjectionMatrix, viewportMatrix);
-		DrawSphere(sphere, worldViewProjectionMatrix, viewportMatrix, BLACK);
+		DrawSphere(sphere1, worldViewProjectionMatrix, viewportMatrix, color);
+		DrawSphere(sphere2, worldViewProjectionMatrix, viewportMatrix, color);
 
 		///
 		/// ↑描画処理ここまで
