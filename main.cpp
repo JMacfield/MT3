@@ -33,6 +33,10 @@ struct Segment {
 	Vector3 diff;
 };
 
+struct Triangle {
+	Vector3 vertricles[3];
+};
+
 const char kWindowTitle[] = "LE2B_02_イソガイユウト_タイトル";
 
 float Dot(const Vector3& v1, const Vector3& v2) {
