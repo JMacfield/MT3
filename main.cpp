@@ -37,6 +37,11 @@ struct Triangle {
 	Vector3 vertricles[3];
 };
 
+struct AABB {
+	Vector3 min;
+	Vector3 max;
+};
+
 const char kWindowTitle[] = "LE2B_02_イソガイユウト_タイトル";
 
 float Dot(const Vector3& v1, const Vector3& v2) {
@@ -519,6 +524,95 @@ void DrawPlane(const Plane& plane, const Matrix4x4& viewProjectionMatrix, const 
 	Novice::DrawLine((int)points[3].x, (int)points[3].y, (int)points[0].x, (int)points[0].y, color);
 }
 
+Vector3 TransformCoord(Vector3 vector, Matrix4x4 matrix) {
+	Vector3 result{};
+	result.x = vector.x * matrix.m[0][0] + vector.y * matrix.m[1][0] + vector.z * matrix.m[2][0] + 1.0f * matrix.m[3][0];
+	result.y = vector.x * matrix.m[0][1] + vector.y * matrix.m[1][1] + vector.z * matrix.m[2][1] + 1.0f * matrix.m[3][1];
+	result.z = vector.x * matrix.m[0][2] + vector.y * matrix.m[1][2] + vector.z * matrix.m[2][2] + 1.0f * matrix.m[3][2];
+
+	float w = vector.x * matrix.m[0][3] + vector.y * matrix.m[1][3] + vector.z * matrix.m[2][3] + 1.0f * matrix.m[3][3];
+	assert(w != 0.0f);
+	result.x /= w;
+	result.y /= w;
+	result.z /= w;
+	return result;
+}
+
+void DrawAABB(const AABB& aabb, const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMatrix, uint32_t color) {
+	Vector3 vers[8]{};
+	vers[0] = { aabb.min.x, aabb.min.y, aabb.min.z };
+	vers[1] = { aabb.min.x, aabb.min.y, aabb.max.z };
+	vers[2] = { aabb.min.x, aabb.max.y, aabb.min.z };
+	vers[3] = { aabb.max.x, aabb.min.y, aabb.min.z };
+	vers[4] = { aabb.max.x, aabb.max.y, aabb.min.z };
+	vers[5] = { aabb.min.x, aabb.max.y, aabb.max.z };
+	vers[6] = { aabb.max.x, aabb.min.y, aabb.max.z };
+	vers[7] = { aabb.max.x, aabb.max.y, aabb.max.z };
+
+	Vector3 screenVers[8]{};
+
+
+	for (int i = 0; i < 8; i++) {
+		vers[i] = TransformCoord(vers[i], viewProjectionMatrix);
+		screenVers[i] = TransformCoord(vers[i], viewportMatrix);
+
+	}
+
+
+
+	Novice::DrawLine(int(screenVers[0].x), int(screenVers[0].y), int(screenVers[1].x), int(screenVers[1].y), color);
+	Novice::DrawLine(int(screenVers[0].x), int(screenVers[0].y), int(screenVers[2].x), int(screenVers[2].y), color);
+	Novice::DrawLine(int(screenVers[0].x), int(screenVers[0].y), int(screenVers[3].x), int(screenVers[3].y), color);
+
+	Novice::DrawLine(int(screenVers[1].x), int(screenVers[1].y), int(screenVers[5].x), int(screenVers[5].y), color);
+	Novice::DrawLine(int(screenVers[1].x), int(screenVers[1].y), int(screenVers[6].x), int(screenVers[6].y), color);
+
+	Novice::DrawLine(int(screenVers[2].x), int(screenVers[2].y), int(screenVers[4].x), int(screenVers[4].y), color);
+	Novice::DrawLine(int(screenVers[2].x), int(screenVers[2].y), int(screenVers[5].x), int(screenVers[5].y), color);
+
+	Novice::DrawLine(int(screenVers[3].x), int(screenVers[3].y), int(screenVers[4].x), int(screenVers[4].y), color);
+	Novice::DrawLine(int(screenVers[3].x), int(screenVers[3].y), int(screenVers[6].x), int(screenVers[6].y), color);
+
+	Novice::DrawLine(int(screenVers[4].x), int(screenVers[4].y), int(screenVers[7].x), int(screenVers[7].y), color);
+	Novice::DrawLine(int(screenVers[5].x), int(screenVers[5].y), int(screenVers[7].x), int(screenVers[7].y), color);
+	Novice::DrawLine(int(screenVers[6].x), int(screenVers[6].y), int(screenVers[7].x), int(screenVers[7].y), color);
+
+}
+
+Matrix4x4 MakeTranslateMatrix(const Vector3 translate) {
+	Matrix4x4 result{};
+
+	for (int i = 0; i < 4; i++) {
+		for (int j = 0; j < 4; j++) {
+			result.m[i][j] = 0;
+		}
+	}
+
+	result.m[0][0] = 1;
+	result.m[1][1] = 1;
+	result.m[2][2] = 1;
+	result.m[3][3] = 1;
+
+	result.m[3][0] = translate.x;
+	result.m[3][1] = translate.y;
+	result.m[3][2] = translate.z;
+
+	return result;
+}
+
+bool IsCollision(const AABB& aabb1, const AABB& aabb2) {
+	if ((aabb1.min.x <= aabb2.max.x && aabb1.max.x >= aabb2.min.x) &&
+		(aabb1.min.y <= aabb2.max.y && aabb1.max.y >= aabb2.min.y) &&
+		(aabb1.min.z <= aabb2.max.z && aabb1.max.z >= aabb2.min.z)
+		) {
+
+		return true;
+
+	}
+
+	return false;
+
+}
 
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
@@ -529,25 +623,33 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	// ライブラリの初期化
 	Novice::Initialize(kWindowTitle, kWindowWidth, kWindowHeight);
 
+	Vector3 cameraTranslate{ 0.0f, 1.9f, -6.49f };
+	Vector3 cameraRotate{ 0.26f, 0.0f, 0.0f };
+
 	// キー入力結果を受け取る箱
-	char keys[256] = {0};
-	char preKeys[256] = {0};
+	char keys[256] = { 0 };
+	char preKeys[256] = { 0 };
 
-	Vector3 v1{ 1.2f,-3.9f,2.5f };
-	Vector3 v2{ 2.8f,0.4f,-1.3f };
+	AABB aabb1{
+		.min{-0.5f, -0.5f, -0.5f},
+		.max{ 0.0f, 0.0f, 0.0f}
+	};
+	AABB aabb2{
+		.min{0.2f, 0.2f, 0.2f},
+		.max{ 1.0f, 1.0f, 1.0f}
+	};
 
-	Vector3 rotate{ 0.0f,0.0f,0.0f };
-	Vector3 translate{ 0.0f,1.0f,0.0f };
-	
-	Vector3 cameraPosition{ 0.0f,1.9f,-6.49f };
-	Vector3 cameraRotate{ 0.08f,0.0f,0.0f };
-	
-	//Sphere sphere1 = { 1.0f,0.0f, 0.0f, 1.0f };
-	
-	Segment segment = { { 0.0f,0.0f,0.0f }, { 0.0f,1.0f,0.0f } };
-	Plane plane = { {0.0f,1.0f,0.0f},1.0f };
+	uint32_t colorS1 = WHITE;
+	uint32_t colorS2 = WHITE;
 
-	unsigned int color = BLACK;
+	//unsigned int color = BLACK;
+
+	Matrix4x4 worldMatrix = MakeAffineMatrix({ 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f });
+	Matrix4x4 cameraMatrix = MakeAffineMatrix({ 1.0f, 1.0f, 1.0f }, cameraRotate, cameraTranslate);
+	Matrix4x4 viewMatrix = Inverse(cameraMatrix);
+	Matrix4x4 projectionMatrix = MakePerspectiveFovMatrix(0.45f, float(kWindowWidth) / float(kWindowHeight), 0.1f, 100.0f);
+	Matrix4x4 worldViewProjectionMatrix = Multiply(worldMatrix, Multiply(viewMatrix, projectionMatrix));
+	Matrix4x4 viewportMatrix = MakeViewPortMatrix(0, 0, float(kWindowWidth), float(kWindowHeight), 0.0f, 1.0f);
 
 	// ウィンドウの×ボタンが押されるまでループ
 	while (Novice::ProcessMessage() == 0) {
@@ -562,30 +664,25 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		/// ↓更新処理ここから
 		///
 
-		Matrix4x4 worldMatrix = MakeAffineMatrix({ 1.0f,1.0f,1.0f }, rotate, translate);
-		Matrix4x4 cameraMatrix = MakeAffineMatrix({ 1.0f,1.0f,1.0f }, cameraRotate, cameraPosition);
-		Matrix4x4 viewMatrix = Inverse(cameraMatrix);
-		Matrix4x4 projectionMatrix = MakePerspectiveFovMatrix(0.45f, float(kWindowWidth) / float(kWindowHeight), 0.1f, 100.0f);
-		Matrix4x4 worldViewProjectionMatrix = Multiply(worldMatrix, Multiply(viewMatrix, projectionMatrix));
-		Matrix4x4 viewPortMatrix = MakeViewPortMatrix(0, 0, float(kWindowWidth), float(kWindowHeight), 0.0f, 1.0f);
+		Vector3 move{};
+		Matrix4x4 trans = MakeTranslateMatrix(cameraTranslate);
 
-		Vector3 start = Transform(Transform(segment.origin, worldViewProjectionMatrix), viewPortMatrix);
-		Vector3 end = Transform(Transform(Add(segment.origin, segment.diff),worldViewProjectionMatrix), viewPortMatrix);
+		cameraTranslate = TransformCoord(move, trans);
 
-		ImGui::Begin("window");
-		ImGui::DragFloat3("CameraTranslate", &translate.x, 0.01f);
-		ImGui::DragFloat3("CameraRotate", &cameraRotate.x, 0.01f);
-		ImGui::DragFloat3("Sphere1Center", &segment.origin.x, 0.01f);
-		ImGui::DragFloat3("PlaneCenter", &plane.normal.x, 0.01f);
-		//ImGui::DragFloat("SphereRadius", &sphere1.radius, 0.01f);
-		ImGui::End();
+		worldMatrix = MakeAffineMatrix({ 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f });
+		cameraMatrix = MakeAffineMatrix({ 1.0f, 1.0f, 1.0f }, cameraRotate, cameraTranslate);
+		viewMatrix = Inverse(cameraMatrix);
+		projectionMatrix = MakePerspectiveFovMatrix(0.45f, float(kWindowWidth) / float(kWindowHeight), 0.1f, 100.0f);
+		worldViewProjectionMatrix = Multiply(worldMatrix, Multiply(viewMatrix, projectionMatrix));
+		viewportMatrix = MakeViewPortMatrix(0, 0, float(kWindowWidth), float(kWindowHeight), 0.0f, 1.0f);
 
-		if (IsCollision(segment, plane)) {
-			color = RED;
+		if (IsCollision(aabb1, aabb2)) {
+			colorS1 = RED;
 		}
 		else {
-			color = BLACK;
+			colorS1 = WHITE;
 		}
+
 
 		///
 		/// ↑更新処理ここまで
@@ -595,10 +692,20 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		/// ↓描画処理ここから
 		///
 
-		DrawGrid(worldViewProjectionMatrix, viewPortMatrix);
-		//DrawSphere(sphere1, worldViewProjectionMatrix, viewportMatrix, color);
-		Novice::DrawLine((int)start.x, (int)start.y, (int)end.x, (int)end.y, color);
-		DrawPlane(plane, worldViewProjectionMatrix, viewPortMatrix, WHITE);
+		DrawGrid(worldViewProjectionMatrix, viewportMatrix);
+
+		DrawAABB(aabb1, worldViewProjectionMatrix, viewportMatrix, colorS1);
+		DrawAABB(aabb2, worldViewProjectionMatrix, viewportMatrix, colorS2);
+
+		ImGui::Begin("Debug");
+		ImGui::DragFloat3("cameraTRa", &cameraTranslate.x, 0.1f, -50.0f, 50.0f);
+		ImGui::DragFloat3("cameraRot", &cameraRotate.x, 0.1f, -50.0f, 50.0f);
+
+		ImGui::DragFloat3("AABB1min", &aabb1.min.x, 0.1f, -1.0f, 5.0f);
+		ImGui::DragFloat3("AABB1max", &aabb1.max.x, 0.1f, -1.0f, 5.0f);
+		ImGui::DragFloat3("AABB2min", &aabb2.min.x, 0.1f, -1.0f, 5.0f);
+		ImGui::DragFloat3("AABB2max", &aabb2.max.x, 0.1f, -1.0f, 5.0f);
+		ImGui::End();
 
 		///
 		/// ↑描画処理ここまで
