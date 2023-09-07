@@ -33,10 +33,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 	int color = WHITE;
 
-	Matrix4x4 obbWorldInverse = MakeInverseMatrix(MakeRotateMatrixFromOrientations(obb.orientation), obb.center);
-	Vector3 centerInOBBLocalSpace = sphere.center * obbWorldInverse;
 	AABB aabbOBBLocal{ .min = -obb.size, .max = obb.size };
-	Sphere sphereObbLocal{ centerInOBBLocalSpace, sphere.radius };
 
 	// ウィンドウの×ボタンが押されるまでループ
 	while (Novice::ProcessMessage() == 0) {
@@ -58,7 +55,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		Matrix4x4 worldViewProjectionMatrix = Multiply(worldMatrix, Multiply(viewMatrix, projectionMatrix));
 		Matrix4x4 viewportMatrix = MakeViewPortMatrix(0, 0, float(kWindowWidth), float(kWindowHeight), 0.0f, 1.0f);
 
-		if (IsCollision(aabbOBBLocal, sphereObbLocal)) {
+		if (IsCollision(obb,sphere)) {
 			color = RED;
 		}
 		else {
@@ -75,7 +72,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 		DrawGrid(worldViewProjectionMatrix, viewportMatrix);
 
-		DrawSphere(sphereObbLocal, worldViewProjectionMatrix, viewportMatrix, color);
+		DrawSphere(sphere, worldViewProjectionMatrix, viewportMatrix, color);
 
 		DrawAABB(aabbOBBLocal, worldViewProjectionMatrix, viewportMatrix, color);
 
@@ -86,8 +83,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		ImGui::DragFloat3("aabb1.min", &aabbOBBLocal.min.x, 0.01f);
 		ImGui::DragFloat3("aabb1.max", &aabbOBBLocal.max.x, 0.01f);
 
-		ImGui::DragFloat3("sphere", &sphereObbLocal.center.x, 0.01f);
-		ImGui::DragFloat("sphere", &sphereObbLocal.radius, 0.01f);
+		ImGui::DragFloat3("sphere", &sphere.center.x, 0.01f);
+		ImGui::DragFloat("sphere", &sphere.radius, 0.01f);
 		ImGui::End();
 
 		///

@@ -678,10 +678,15 @@ inline bool IsCollision(const AABB& aabb, const Sphere& sphere) {
 	};
 
 	float distance = Length(Subtract(clossestPoint, sphere.center));
-	if (distance <= sphere.radius) {
-		return true;
-	}
+	
+	return distance <= sphere.radius;
+}
 
-	return false;
+inline bool IsCollision(const OBB& obb, const Sphere& sphere) {
+	Matrix4x4 obbWorldInverse = MakeInverseMatrix(MakeRotateMatrixFromOrientations(obb.orientation), obb.center);
+	Vector3 centerInOBBLocalSpace = sphere.center * obbWorldInverse;
+	AABB aabbOBBLocal{ .min = -obb.size, .max = obb.size };
+	Sphere sphereObbLocal{ centerInOBBLocalSpace, sphere.radius };
 
+	return IsCollision(aabbOBBLocal, sphereObbLocal);
 }
