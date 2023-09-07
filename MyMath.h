@@ -54,6 +54,28 @@ struct OBB {
 	Vector3 size;
 };
 
+struct Ball {
+	Vector3 position;
+	Vector3 velocity;
+	Vector3 acceleration;
+	float mass;
+	float radius;
+	unsigned int color;
+};
+
+struct Capsule {
+	Segment segment;
+	float radius;
+};
+
+inline Vector3 operator+(const Vector3& v) {
+	return { +v.x, +v.y, +v.z };
+}
+
+inline Vector3 operator+(const Vector3& v1, const Vector3& v2) {
+	return { v1.x + v2.x, v1.y + v2.y, v1.z + v2.z };
+}
+
 inline Vector3 operator-(const Vector3& v) {
 	return { -v.x, -v.y, -v.z };
 }
@@ -67,6 +89,13 @@ inline Vector3 operator*(const Vector3& v, float s) {
 }
 inline Vector3 operator*(float s, const Vector3& v) {
     return { s * v.x, s * v.y, s * v.z };
+}
+
+inline Vector3& operator+=(Vector3& v1, const Vector3& v2) {
+	v1.x += v2.x;
+	v1.y += v2.y;
+	v1.z += v2.z;
+	return v1;
 }
 
 inline Vector3 operator*(const Vector3& v, const Matrix4x4& m) {
@@ -488,6 +517,58 @@ inline void DrawSphere(const Sphere& sphere, const Matrix4x4& viewProjectionMatr
 
 };
 
+void DrawSphere(
+	const Ball& sphere, const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMatrix,
+	uint32_t color) {
+	const uint32_t kSubdivision = 20;                 // 分割数
+	const float pi = 3.14f;                           // π
+	const float kLonEvery = 2.0f * pi / kSubdivision; // 経度分割1つ分の角度(φd)
+	const float kLatEvery = pi / kSubdivision;        // 緯度分割1つ分の角度(θd)
+
+	// 緯度の方向に分割-π/2~π/2
+	for (uint32_t latIndex = 0; latIndex < kSubdivision; ++latIndex) {
+		float lat = -pi / 2.0f + kLatEvery * latIndex; // 現在の緯度(θ)
+		// 経度の方向に分割
+		for (uint32_t lonIndex = 0; lonIndex < kSubdivision; ++lonIndex) {
+			float lon = lonIndex * kLonEvery; // 現在の経度(φ)
+			Vector3 a, b, c;
+			a = {
+				std::cos(lat) * std::cos(lon) * sphere.radius + sphere.position.x,
+				std::sin(lat) * sphere.radius + sphere.position.y,
+				std::cos(lat) * std::sin(lon) * sphere.radius + sphere.position.z };
+
+			b = {
+				std::cos(lat + kLatEvery) * std::cos(lon) * sphere.radius + sphere.position.x,
+				std::sin(lat + kLatEvery) * sphere.radius + sphere.position.y,
+				std::cos(lat + kLatEvery) * std::sin(lon) * sphere.radius + sphere.position.z };
+
+			c = {
+				std::cos(lat) * std::cos(lon + kLonEvery) * sphere.radius + sphere.position.x,
+				std::sin(lat) * sphere.radius + sphere.position.y,
+				std::cos(lat) * std::sin(lon + kLonEvery) * sphere.radius + sphere.position
+				.z };
+
+			// 正規化デバイス座標系
+			Vector3 ndcVertexA = Transform(a, viewProjectionMatrix);
+			Vector3 ndcVertexB = Transform(b, viewProjectionMatrix);
+			Vector3 ndcVertexC = Transform(c, viewProjectionMatrix);
+			// スクリーン座標系
+			Vector3 screenVerticesA = Transform(ndcVertexA, viewportMatrix);
+			Vector3 screenVerticesB = Transform(ndcVertexB, viewportMatrix);
+			Vector3 screenVerticesC = Transform(ndcVertexC, viewportMatrix);
+
+			// ab
+			Novice::DrawLine(
+				int(screenVerticesA.x), int(screenVerticesA.y), int(screenVerticesB.x),
+				int(screenVerticesB.y), color);
+			// bc
+			Novice::DrawLine(
+				int(screenVerticesA.x), int(screenVerticesA.y), int(screenVerticesC.x),
+				int(screenVerticesC.y), color);
+		}
+	}
+}
+
 inline bool IsCollision(const Sphere& s1, const Sphere& s2) {
 	float result = Dot(Subtract(s1.center, s2.center), Subtract(s1.center, s2.center));
 
@@ -689,4 +770,33 @@ inline bool IsCollision(const OBB& obb, const Sphere& sphere) {
 	Sphere sphereObbLocal{ centerInOBBLocalSpace, sphere.radius };
 
 	return IsCollision(aabbOBBLocal, sphereObbLocal);
+}
+
+inline Vector3 Reflect(const Vector3& input, const Vector3& normal) {
+	Vector3 r;
+	r = input - 2 * Dot(input, normal) * normal;
+
+	return r;
+}
+
+Vector3 ClosestPoint(const Segment& segment, const Vector3 point) {
+	Vector3 lineVector = segment.diff - segment.origin;
+	float length = sqrtf(
+		lineVector.x * lineVector.x + lineVector.y * lineVector.y + lineVector.z * lineVector.z);
+
+	Vector3 unitVector = lineVector;
+	if (length != 0.0f) {
+		unitVector.x = lineVector.x / length;
+		unitVector.y = lineVector.y / length;
+		unitVector.z = lineVector.z / length;
+	}
+
+	Vector3 toCenter = point - segment.origin;
+
+	float dot = Dot(toCenter, unitVector);
+
+	dot = fmaxf(0.0f, fminf(dot, length));
+	Vector3 closestPoint = segment.origin + unitVector * dot;
+
+	return closestPoint;
 }

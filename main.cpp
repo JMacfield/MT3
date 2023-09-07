@@ -19,21 +19,29 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	char keys[256] = { 0 };
 	char preKeys[256] = { 0 };
 
-	OBB obb{
-		{-1.0f, 0.0f, 0.0f},
-		{
-		 {1.0f, 0.0f, 0.0f},
-		 {0.0f,1.0f,0.0f,},
-		 {0.0f, 0.0f, 1.0f},
-		},
-		{0.5f, 0.5f, 0.5f}
+	Ball ball{ 
+	.position = { 0.8f,1.2f,0.3f },
+	.velocity = { 0.0f,0.0f,0.0f },
+	.acceleration = { 0.0f,-9.8f,0.0f },
+	.radius = 0.05f,
+	.color = WHITE,
 	};
 
-	Sphere sphere{ 0,0,3,1.0f };
+	Plane plane{
+		.normal{-0.2f,0.9f,-0.3f},
+		.distance = 0.0f,
+	};
 
-	int color = WHITE;
+	Capsule capsule{
+		capsule.segment.origin = ball.position,
+		capsule.segment.diff = {0.0f,0.0f,0.0f},
+		capsule.radius = ball.radius,
+	};
 
-	AABB aabbOBBLocal{ .min = -obb.size, .max = obb.size };
+	float e = 0.8f;
+	float deltaTime = 1.0f / 60.0f;
+
+	bool isStart = false;
 
 	// ウィンドウの×ボタンが押されるまでループ
 	while (Novice::ProcessMessage() == 0) {
@@ -48,19 +56,41 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		/// ↓更新処理ここから
 		///
 
-		Matrix4x4 worldMatrix = MakeAffineMatrix({ 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f });
-		Matrix4x4 cameraMatrix = MakeAffineMatrix({ 1.0f, 1.0f, 1.0f }, cameraRotate, cameraTranslate);
-		Matrix4x4 viewMatrix = Inverse(cameraMatrix);
-		Matrix4x4 projectionMatrix = MakePerspectiveFovMatrix(0.45f, float(kWindowWidth) / float(kWindowHeight), 0.1f, 100.0f);
-		Matrix4x4 worldViewProjectionMatrix = Multiply(worldMatrix, Multiply(viewMatrix, projectionMatrix));
-		Matrix4x4 viewportMatrix = MakeViewPortMatrix(0, 0, float(kWindowWidth), float(kWindowHeight), 0.0f, 1.0f);
+		if(keys[DIK_SPACE]&& preKeys[DIK_SPACE] == 0) {
+			isStart = true;
+		}
 
-		if (IsCollision(obb,sphere)) {
-			color = RED;
+		if (isStart) {
+			Vector3 velocity = ball.acceleration * deltaTime;
+			ball.velocity += velocity;
+			Vector3 position = ball.velocity * deltaTime;
+			ball.position += position;
+
+			capsule.segment.diff = ball.position;
+			Vector3 center = Multiply(plane.distance, plane.normal);
+
+			Segment capsuleLine = { capsule.segment.origin,capsule.segment.diff };
+			Vector3 closestPoint = ClosestPoint(capsuleLine, center);
+			Vector3 closestPointToCenter = center - closestPoint;
+
+			float sumRadius = 1 + capsule.radius;
+
+			if (Dot(closestPointToCenter, closestPointToCenter) < sumRadius * sumRadius) {
+
+			}
+
+			if (IsCollision(Sphere{ ball.position,ball.radius }, plane)) {
+				ball.velocity = Reflect(ball.velocity, plane.normal) * e;
+			}
 		}
-		else {
-			color = WHITE;
-		}
+
+		Matrix4x4 cameraMatrix = MakeAffineMatrix({ 1.0f,1.0f,1.0f }, cameraRotate, cameraTranslate);
+		Matrix4x4 viewMatrix = Inverse(cameraMatrix);
+
+		Matrix4x4 projectionMatrix = MakePerspectiveFovMatrix(0.45f, float(kWindowWidth) / float(kWindowHeight), 0.1f, 100.0f);
+		Matrix4x4 viewProjectionMatrix = Multiply(viewMatrix, projectionMatrix);
+
+		Matrix4x4 viewportMatrix = MakeViewPortMatrix(0, 0, float(kWindowWidth), float(kWindowHeight), 0.0f, 1.0f);
 
 		///
 		/// ↑更新処理ここまで
@@ -70,22 +100,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		/// ↓描画処理ここから
 		///
 
-		DrawGrid(worldViewProjectionMatrix, viewportMatrix);
-
-		DrawSphere(sphere, worldViewProjectionMatrix, viewportMatrix, color);
-
-		DrawAABB(aabbOBBLocal, worldViewProjectionMatrix, viewportMatrix, color);
-
-		ImGui::Begin("Window");
-		ImGui::DragFloat3("CameraRotate", &cameraRotate.x, 0.01f);
-		ImGui::DragFloat3("CameraTranslate", &cameraTranslate.x, 0.01f);
-
-		ImGui::DragFloat3("aabb1.min", &aabbOBBLocal.min.x, 0.01f);
-		ImGui::DragFloat3("aabb1.max", &aabbOBBLocal.max.x, 0.01f);
-
-		ImGui::DragFloat3("sphere", &sphere.center.x, 0.01f);
-		ImGui::DragFloat("sphere", &sphere.radius, 0.01f);
-		ImGui::End();
+		DrawGrid(viewProjectionMatrix, viewportMatrix);
+		DrawSphere(ball, viewProjectionMatrix, viewportMatrix, ball.color);
+		DrawPlane(plane, viewProjectionMatrix, viewportMatrix, WHITE);
 
 		///
 		/// ↑描画処理ここまで
